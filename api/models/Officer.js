@@ -7,8 +7,7 @@
 
 module.exports = {
   attributes: {
-    username: 'string',
-    mail: {
+    email: {
       type: 'string',
       isEmail: true,
     },

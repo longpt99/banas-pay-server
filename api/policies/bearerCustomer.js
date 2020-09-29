@@ -1,7 +1,7 @@
 const { ObjectId } = require('mongodb');
 
 module.exports = async (req, res, next) => {
-  const client = mongoConnect();
+  const client = await sails.helpers.mongoConnect();
   try {
     await client.connect();
     if (req.user.name !== 'customer') {

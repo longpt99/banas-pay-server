@@ -1,27 +1,23 @@
 /**
- * ClientController
+ * CustomerController
  *
  * @description :: Server-side actions for handling incoming requests.
  * @help        :: See https://sailsjs.com/docs/concepts/actions
  */
-const { v4: uuidv4 } = require('uuid');
 
 module.exports = {
-  create: async (req, res) => {
+  fetchAll: async (req, res) => {
     const client = await sails.helpers.mongoConnect();;
     try {
       await client.connect();
-      const { name } = req.body;
-      await client.db().collection('client').insertOne({
-        name,
-        token: uuidv4(),
-      });
-      return res.json('Created successfull');
     } catch (error) {
-      sails.log(error);
-      return res.status(404).json(error);
+      return;
     } finally {
       await client.close();
     }
   },
+  fetch: (req, res) => {},
+  create: (req, res) => {},
+  update: (req, res) => {},
+  delete: (req, res) => {},
 };

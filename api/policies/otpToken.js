@@ -10,17 +10,10 @@ module.exports = async (req, res, next) => {
     if (authType !== 'Bearer') {
       throw new Error('Expected a Bearer token');
     }
-    const user = jwt.verify(token, sails.config.token.RJWT_SECRET_KEY);
-    delete user.iat;
-    delete user.exp;
-    user.token = { refreshToken: token };
+    const user = jwt.verify(token, sails.config.token.OTP_JWT_SECRET_KEY);
     req.user = user;
     return next();
   } catch (error) {
-    debugger;
-    if (error.message === 'jwt expired') {
-      error.message = 'refresh jwt expired';
-    }
     return res.status(401).json({ success: false, message: error.message });
   }
 };

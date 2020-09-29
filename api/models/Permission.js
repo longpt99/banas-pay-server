@@ -1,5 +1,5 @@
 /**
- * Auth.js
+ * Permission.js
  *
  * @description :: A model definition represents a database table/collection.
  * @docs        :: https://sailsjs.com/docs/concepts/models-and-orm/models
@@ -7,9 +7,8 @@
 
 module.exports = {
   attributes: {
-    phone: 'string',
-    password: 'string',
-    userId: 'string',
-    countWrongPassword: 'number',
+    controller: 'string',
+    action: 'string',
+    name: 'string',
   },
 };

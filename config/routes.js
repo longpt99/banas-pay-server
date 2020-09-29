@@ -18,16 +18,27 @@ module.exports.routes = {
    *                                                                          *
    ***************************************************************************/
 
-  '/': { view: 'pages/homepage' },
-
   'post /api/auth/login': 'auth.login',
   'post /api/auth/register': 'auth.register',
   'post /api/auth/refresh-token': 'auth.refreshToken',
-  'post /api/auth/totp-generate': 'auth.totpGenerate',
+
+  'post /api/otp/generate': 'otp.generate',
+  'post /api/otp/validate': 'otp.validate',
+  'post /api/otp/regenerate': 'otp.regenerate',
 
   'get /api/customer/profile': 'customer.fetchProfile',
 
   'post /api/client/create': 'client.create',
+
+  'post /api/admin/auth/login': 'officer.auth.login',
+
+  'get /api/test': 'test.test',
+  // 'post /api/auth/register': 'auth.register',
+  // 'post /api/auth/refresh-token': 'auth.refreshToken',
+
+  // 'post /api/otp/generate': 'otp.generate',
+  // 'post /api/otp/validate': 'otp.validate',
+  // 'post /api/otp/renew': 'otp.renew',
 
   /***************************************************************************
    *                                                                          *

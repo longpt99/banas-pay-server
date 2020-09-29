@@ -7,12 +7,11 @@
 
 module.exports = {
   attributes: {
-    userId: 'string',
-    client: 'string',
-    secret: 'string',
-    verify: {
-      type: 'boolean',
-      defaultsTo: false,
+    secretKey: 'string',
+    status: {
+      type: 'string',
+      defaultsTo: 'init',
     },
+    phone: 'string',
   },
 };

@@ -18,12 +18,20 @@ module.exports.policies = {
 
   // '*': true,
   AuthController: {
-    login: ['basicToken', 'localLogin'],
-    register: ['localRegister', 'otpValidation'],
+    login: ['basicToken'],
+    register: ['otpToken'],
     refreshToken: ['refreshToken'],
   },
+  OtpController: {},
   CustomerController: {
     fetchProfile: ['bearerToken', 'bearerCustomer'],
   },
   ClientController: {},
+
+  'officer/AuthController': {
+    login: ['basicToken'],
+  },
+  'officer/CustomerController': {
+    // profile: ['bearerToken', 'bearerAdmin', 'userRole'],
+  },
 };

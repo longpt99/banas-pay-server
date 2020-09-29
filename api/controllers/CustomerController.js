@@ -7,6 +7,9 @@
 
 module.exports = {
   fetchProfile: async (req, res) => {
-    return res.status(200).json({ info: req.user });
+    return res.status(200).json({
+      message: 'Fetch User profile successfull',
+      data: { info: req.user },
+    });
   },
 };

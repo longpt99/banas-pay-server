@@ -6,22 +6,23 @@
  */
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
-const { ObjectId } = require('mongodb');
-const { totp } = require('otplib');
-const { v4: uuidv4 } = require('uuid');
 
 module.exports = {
-  login: (req, res) => {
+  login: async (req, res) => {
     try {
+      const signToken = await localLogin(req, res);
+      if (signToken.success === false) {
+        throw signToken;
+      }
       const accessToken = jwt.sign(
-        req.signToken,
+        signToken,
         sails.config.token.JWT_SECRET_KEY,
         {
           expiresIn: sails.config.token.JWT_EXPIRES_IN,
         }
       );
       const refreshToken = jwt.sign(
-        req.signToken,
+        signToken,
         sails.config.token.RJWT_SECRET_KEY,
         {
           expiresIn: sails.config.token.RJWT_EXPIRES_IN,
@@ -29,58 +30,67 @@ module.exports = {
       );
 
       return res.status(200).json({
-        msg: 'Login successful',
-        token: {
-          accessToken,
-          refreshToken,
+        success: true,
+        message: 'Login successful',
+        data: {
+          token: {
+            accessToken,
+            refreshToken,
+          },
         },
       });
     } catch (error) {
-      return res.status(404).json({
-        msg: error.message,
-      });
+      return error.status
+        ? res.status(error.status).json(error)
+        : res.json(error);
     }
   },
   register: async (req, res) => {
-    const client = mongoConnect();
+    const client = await sails.helpers.mongoConnect();
     try {
+      debugger;
       await client.connect();
-      const {
-        name,
-        email,
-        phone,
-        gender,
-        address,
-        birth,
-        username,
-        password,
-        identifyCard,
-        identifyNumber,
-      } = req.body;
-      const customerId = new ObjectId();
-      const hashedPassword = await bcrypt.hash(password, 10);
+      const userId = await client
+        .db()
+        .collection('customer')
+        .findOne(
+          { phone: req.user.phone, status: 'init' },
+          { projection: { _id: 1 } }
+        );
+      if (!userId) {
+        throw {
+          success: false,
+          message: 'User not found',
+          status: 404,
+        };
+      }
+      const hashedPassword = await bcrypt.hash(req.body.password, 10);
       await Promise.all([
-        client.db().collection('customer').insertOne({
-          _id: customerId,
-          name,
-          email,
-          phone,
-          gender,
-          address,
-          birth,
-          identifyCard,
-          identifyNumber,
-        }),
+        client
+          .db()
+          .collection('customer')
+          .updateOne(
+            { _id: userId._id },
+            {
+              $set: {
+                ...req.body.basicInfo,
+                status: 'active',
+              },
+            }
+          ),
         client.db().collection('auth').insertOne({
-          username,
+          phone: req.user.phone,
           password: hashedPassword,
           countWrongPassword: 0,
-          customerId,
+          userId: userId._id,
         }),
       ]);
-      return res.status(200).json({ msg: 'Create new account succeed' });
+      return res.status(200).json({
+        success: true,
+        message: 'New account created successfully',
+      });
     } catch (error) {
-      return res.status(500).json({ msg: error.message });
+      return res.status(error.status).json(error);
     } finally {
       await client.close();
     }
@@ -89,46 +99,76 @@ module.exports = {
     const accessToken = jwt.sign(req.user, sails.config.token.JWT_SECRET_KEY, {
       expiresIn: sails.config.token.JWT_EXPIRES_IN,
     });
-    const refreshToken = jwt.sign(
-      req.user,
-      sails.config.token.RJWT_SECRET_KEY,
-      {
-        expiresIn: sails.config.token.RJWT_EXPIRES_IN,
-      }
-    );
+    // const refreshToken = jwt.sign(
+    //   req.user,
+    //   sails.config.token.RJWT_SECRET_KEY,
+    //   {
+    //     expiresIn: sails.config.token.RJWT_EXPIRES_IN,
+    //   }
+    // );
 
     return res.status(200).json({
-      msg: 'Refresh token successful',
-      token: {
-        accessToken,
-        refreshToken,
+      success: true,
+      message: 'Refresh token successful',
+      data: {
+        token: {
+          accessToken,
+          refreshToken: req.user.token.refreshToken,
+        },
       },
     });
   },
-  totpGenerate: async (req, res) => {
-    const client = mongoConnect();
-    try {
-      await client.connect();
-      const secret = uuidv4();
-      totp.options = {
-        step: 300,
-        digits: 6,
+};
+
+const localLogin = async (req) => {
+  const client = await sails.helpers.mongoConnect();
+  try {
+    await client.connect();
+
+    const { phone, password } = req.body;
+
+    if (!phone || !password) {
+      const field = phone ? 'password' : 'phone';
+      throw {
+        success: false,
+        message: `Field ${field} is required`,
+        field,
+        status: 404,
       };
-      const token = totp.generate(secret);
-      const id = new ObjectId();
-      await client.db().collection('otp').insertOne({
-        customerId: id,
-        secret,
-      });
-      await sendMail(req.body.mail, token);
-      return res.status(200).json({
-        customerId: id,
-        // remaining: 30 - Math.floor((new Date().getTime() / 1000.0) % 30),
-      });
-    } catch (error) {
-      return res.status(200).json({ msg: error.message });
-    } finally {
-      await client.close();
     }
-  },
+    const auth = await client.db().collection('auth').findOne({ phone });
+    if (!auth) {
+      throw {
+        success: false,
+        message: 'The phone number not found',
+        field: 'phone',
+        status: 404,
+      };
+    }
+
+    if (auth.countWrongPassword > 4) {
+      throw {
+        success: false,
+        message:
+          'Invalid account. Please go to the nearest bank to re-issue your account',
+        filed: 'password',
+        status: 404,
+      };
+    }
+
+    const isMatch = await bcrypt.compare(password, auth.password);
+    if (!isMatch) {
+      throw {
+        success: false,
+        message: 'Invalid password',
+        field: 'password',
+        status: 404,
+      };
+    }
+    return { userId: auth.userId, name: req.col };
+  } catch (error) {
+    return error;
+  } finally {
+    await client.close();
+  }
 };
