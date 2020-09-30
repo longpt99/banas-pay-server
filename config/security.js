@@ -29,7 +29,7 @@ module.exports.security = {
 
   cors: {
     allRoutes: true,
-    allowOrigins: ['http://localhost:3000'],
+    allowOrigins: ['https://banas-pay-longpt99.netlify.app'],
     allowCredentials: true,
     allowRequestHeaders: 'Access-Control-Allow-Origin, *',
   },
