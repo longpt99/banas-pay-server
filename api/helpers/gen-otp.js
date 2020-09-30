@@ -23,7 +23,7 @@ module.exports = {
       const col = client.db().collection('otp');
       const secret = uuidv4();
       totp.options = {
-        step: 30,
+        step: 60,
         digits: 6,
       };
       const otpCode = totp.generate(secret);
